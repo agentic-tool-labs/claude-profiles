@@ -65,4 +65,10 @@ printf '#!/bin/sh\necho old\n' >"$tmp/fakebin/claude"
 fails_with "add refuses a Claude Code build without the variable" "$tool" add other
 check "...and creates nothing" test ! -e "$tmp/bin/claude-other"
 
+inst="$tmp/inst"
+check "installer installs the script" env CLAUDE_PROFILE_SRC="file://$tool" CLAUDE_PROFILES_BIN="$inst" sh "$here/install.sh"
+check "...byte for byte" cmp -s "$tool" "$inst/claude-profile"
+fails_with "installer rejects a download that isn't the script" env CLAUDE_PROFILE_SRC="file://$here/README.md" CLAUDE_PROFILES_BIN="$tmp/inst2" sh "$here/install.sh"
+check "...and leaves nothing behind" sh -c "[ -z \"\$(ls -A '$tmp/inst2')\" ]"
+
 [ "$fails" = 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
