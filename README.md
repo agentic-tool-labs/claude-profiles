@@ -71,13 +71,16 @@ Set `CLAUDE_PROFILES_HOME` or `CLAUDE_PROFILES_BIN` to change where profiles and
 
 ## Documentation
 
-A one-page guide is in [docs/index.html](docs/index.html).
+The guide is at https://agentic-tool-labs.github.io/claude-profiles/ (source in [docs/index.html](docs/index.html)).
 
 ## Install
 
 ```sh
-cp claude-profile ~/.local/bin/ && chmod +x ~/.local/bin/claude-profile
+curl -fsSL https://raw.githubusercontent.com/agentic-tool-labs/claude-profiles/main/install.sh | sh
 ```
+
+This puts `claude-profile` in `~/.local/bin`, or in `$CLAUDE_PROFILES_BIN` if you set it. To install by
+hand, copy `claude-profile` onto your PATH and make it executable.
 
 ## Tests
 
