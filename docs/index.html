@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>claude-profile: several Claude Code logins, one shared setup</title>
+<meta name="description" content="Run more than one Claude Code login side by side, with settings, plugins and history shared.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fbfaf7; --fg: #1f1d1a; --muted: #5f5a52; --rule: #e4e0d8;
+    --code-bg: #f1eee8; --accent: #b4532a; --warn-bg: #fff4e5; --warn-rule: #e8b26a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1917; --fg: #ece9e3; --muted: #a8a299; --rule: #34312d;
+      --code-bg: #262421; --accent: #e08a5f; --warn-bg: #2d2418; --warn-rule: #8a6532;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.25rem 5rem; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 .5rem; letter-spacing: -.01em; }
+  h2 { font-size: 1.25rem; margin: 2.75rem 0 .75rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); }
+  h3 { font-size: 1rem; margin: 1.5rem 0 .25rem; }
+  p, li { max-width: 40rem; }
+  .lede { font-size: 1.15rem; color: var(--muted); margin: 0 0 2rem; }
+  a { color: var(--accent); }
+  code, pre { font: .9em/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+  pre { background: var(--code-bg); padding: 1rem 1.1rem; border-radius: 8px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  .comment { color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+  th, td { text-align: left; vertical-align: top; padding: .55rem .6rem; border-bottom: 1px solid var(--rule); }
+  th { font-weight: 600; }
+  td:first-child { white-space: nowrap; }
+  .notice {
+    background: var(--warn-bg); border-left: 4px solid var(--warn-rule);
+    padding: .9rem 1.1rem; border-radius: 0 8px 8px 0; margin: 1.5rem 0;
+  }
+  .notice p { margin: .4rem 0; }
+  nav { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; font-size: .95rem; margin-bottom: 2.5rem; }
+  footer { margin-top: 3.5rem; font-size: .9rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>claude-profile</h1>
+  <p class="lede">Run more than one Claude Code login at the same time, for example a personal
+  account in one terminal and a work account in another, with your settings, plugins and history
+  shared between them.</p>
+
+  <nav aria-label="On this page">
+    <a href="#legal">Legal use only</a>
+    <a href="#quick-start">Quick start</a>
+    <a href="#shared">What's shared</a>
+    <a href="#how">How it works</a>
+    <a href="#commands">Commands</a>
+    <a href="#caveats">Caveats</a>
+    <a href="#remove">Removing a profile</a>
+  </nav>
+
+  <section id="legal" class="notice" aria-labelledby="legal-title">
+    <h2 id="legal-title" style="border:0;margin:0;padding:0">Legal use only</h2>
+    <p>Use claude-profile only with Claude accounts you own or are authorized to use, and only in
+    ways your Anthropic plan's terms allow. It does not share, pool or resell access. Don't use it
+    to let other people use your account, or to get around usage limits or other protections.</p>
+    <p>You are responsible for how you use it. claude-profile is not affiliated with or endorsed
+    by Anthropic, and it is provided as is, without warranty, under the MIT license.</p>
+  </section>
+
+  <h2 id="quick-start">Quick start</h2>
+  <pre><code>cp claude-profile ~/.local/bin/ &amp;&amp; chmod +x ~/.local/bin/claude-profile
+
+claude-profile add work      <span class="comment"># creates the claude-work command</span>
+claude-work                  <span class="comment"># type /login and sign in with the other account</span>
+claude-profile doctor work   <span class="comment"># checks the two logins are really separate</span></code></pre>
+  <p>From then on, <code>claude</code> is your main account and <code>claude-work</code> is the
+  other one. Open them in two terminals and use both at once.</p>
+
+  <h2 id="shared">What's shared and what isn't</h2>
+  <table>
+    <thead><tr><th scope="col">Shared, and live in both</th><th scope="col">Separate per login</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Settings, plugins, skills, hooks, <code>CLAUDE.md</code>, MCP servers, project trust,
+        session history: everything in <code>~/.claude</code> and <code>~/.claude.json</code>.
+        A change made in one terminal shows up in the other.</td>
+        <td>The login itself, and so the account that inference, usage limits, billing and
+        Remote Control go to.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="how">How it works</h2>
+  <p><code>claude-work</code> is a small wrapper that runs your normal <code>claude</code> with
+  <code>CLAUDE_SECURESTORAGE_CONFIG_DIR</code> set to <code>~/.claude-profiles/work</code>. That
+  variable changes only where Claude Code stores the login:</p>
+  <ul>
+    <li><strong>macOS:</strong> a separate Keychain entry, named
+    <code>Claude Code-credentials-</code> followed by the first 8 hex digits of the SHA-256 of
+    that folder's path.</li>
+    <li><strong>Linux and Windows:</strong> <code>~/.claude-profiles/work/.credentials.json</code>
+    instead of <code>~/.claude/.credentials.json</code>.</li>
+  </ul>
+  <p>The documented <code>CLAUDE_CONFIG_DIR</code> also gives you a separate login, but it moves
+  settings, plugins and history as well, so the two accounts would stop sharing a setup.</p>
+
+  <h2 id="commands">Commands</h2>
+  <table>
+    <thead><tr><th scope="col">Command</th><th scope="col">What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>add &lt;name&gt;</code></td><td>Creates <code>claude-&lt;name&gt;</code> in
+      <code>~/.local/bin</code> and a private folder for its login. It never overwrites a command
+      it didn't create, and the name <code>profile</code> is reserved.</td></tr>
+      <tr><td><code>list</code></td><td>Shows the profiles this tool created.</td></tr>
+      <tr><td><code>doctor &lt;name&gt;</code></td><td>Checks the Claude Code version, that the
+      variable is supported, that the profile has its own stored login, and that it belongs to a
+      different account from <code>claude</code>.</td></tr>
+      <tr><td><code>remove [-y] &lt;name&gt;</code></td><td>Deletes <code>claude-&lt;name&gt;</code>
+      and the login stored for that profile. Your main login is never touched.</td></tr>
+    </tbody>
+  </table>
+  <p>Set <code>CLAUDE_PROFILES_HOME</code> or <code>CLAUDE_PROFILES_BIN</code> to change where
+  profiles and commands go.</p>
+  <p><code>doctor</code> sends each login's access token to
+  <code>api.anthropic.com/api/oauth/profile</code> to find out its email. The token goes to
+  <code>curl</code> on standard input, never on the command line.</p>
+
+  <h2 id="caveats">Caveats</h2>
+  <h3>The variable is undocumented</h3>
+  <p><code>CLAUDE_SECURESTORAGE_CONFIG_DIR</code> is internal to Claude Code, and a release could
+  rename or drop it. If that happened, <code>/login</code> in a profile would replace your main
+  login. To guard against that, <code>add</code> refuses a Claude Code build that doesn't contain
+  the variable, and removes the new command again if it reports a login before you've signed in
+  to it. Run <code>claude-profile doctor &lt;name&gt;</code> after Claude Code updates.</p>
+  <h3>Tested on macOS only</h3>
+  <p>It has been run on macOS with Claude Code 2.1.330. Linux and Windows support is based on
+  reading Claude Code's source and hasn't been run. The wrapper is a POSIX shell script, so on
+  Windows it needs WSL or Git Bash.</p>
+  <h3><code>/status</code> may name the other account</h3>
+  <p><code>/status</code>, and the account email Claude Code gives the model, come from
+  <code>oauthAccount</code> in the shared <code>~/.claude.json</code>. That names whichever
+  account logged in last. Inference, usage limits and Remote Control use each command's own login
+  and aren't affected. If you use claude-tui-line 0.8.0 or later, its <code>email</code> and
+  <code>organization</code> status-line items show each session's real account.</p>
+
+  <h2 id="remove">Removing a profile</h2>
+  <pre><code>claude-profile remove work</code></pre>
+  <p>This asks for confirmation, then deletes <code>claude-work</code>, that profile's Keychain
+  entry or credentials file, and its folder if it's empty. Add <code>-y</code> to skip the
+  question.</p>
+
+  <footer>MIT licensed. Not affiliated with or endorsed by Anthropic.</footer>
+</main>
+</body>
+</html>

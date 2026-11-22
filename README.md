@@ -14,6 +14,14 @@ After that, `claude` is your main account and `claude-work` is the other one. Bo
 trust and history are shared and live: a change made in one shows up in the other. Usage limits,
 billing and Remote Control go to whichever account each command is logged in as.
 
+## Legal use only
+
+Use claude-profile only with Claude accounts you own or are authorized to use, and only in ways
+your Anthropic plan's terms allow. It does not share, pool or resell access, and it must not be used
+to let other people use your account or to get around usage limits or other protections. You are
+responsible for how you use it. claude-profile is not affiliated with or endorsed by Anthropic, and
+it is provided as is, without warranty (see [LICENSE](LICENSE)).
+
 ## How it works
 
 `claude-work` is a three-line wrapper that runs your normal `claude` with
@@ -60,6 +68,10 @@ history too, so the two accounts stop sharing a setup.
 email. The token is passed to `curl` on stdin, not on the command line.
 
 Set `CLAUDE_PROFILES_HOME` or `CLAUDE_PROFILES_BIN` to change where profiles and commands go.
+
+## Documentation
+
+A one-page guide is in [docs/index.html](docs/index.html).
 
 ## Install
 
